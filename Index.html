@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AJAX Login & Registration</title>
+  <link rel="stylesheet" href="Style/Style-1.css">
+<!-- Load Font Awesome from local FontAwesome folder -->
+<link href="FontAwesome/css/fontawesome.css" rel="stylesheet" />
+<link href="FontAwesome/css/brands.css" rel="stylesheet" />
+<link href="FontAwesome/css/solid.css" rel="stylesheet" />
+<link href="FontAwesome/css/sharp-thin.css" rel="stylesheet" />
+<link href="FontAwesome/css/duotone-thin.css" rel="stylesheet" />
+<link href="FontAwesome/css/sharp-duotone-thin.css" rel="stylesheet" />
+
+</head>
+<body>
+
+<div class="body-holder">
+
+  <!-- Image Panel -->
+  <div class="image-holder"></div>
+
+  <!-- Form Panel -->
+  <div class="form-holder">
+    <div id="overlay"></div>
+    <div class="login-holder" id="login-holder" style="display: block;">
+          <h2>Login</h2>
+    <form id="loginForm">
+      <input type="text" placeholder="Name" id="loginName"></label><br>
+      <input type="password" placeholder="password" id="loginPassword"></label><br>
+      
+      <button type="submit" id="loginBtn">Login</button>
+      <br>
+            <br>
+      <br>
+     <div class="unique">
+            <h4 style="     padding: 5px 20px;
+    background-color: #ffff;
+    display: flex
+;
+    z-index: 100;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-content: center;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 18px;
+    border-radius: 50px;
+    max-width: 50px;
+    border: 1px solid #c4c0c0;
+    position: static;
+    font-size: 10px;">Or join us</h4>
+      <hr style="max-width: 500px;
+    color: #1d1d1d;
+    margin-top: -31px;
+    margin-bottom: 40px;
+    min-width: 300px;">
+              <a id="action-reg" onclick="action('show-reg')">Register now</a></div>
+              <div class="unique-links">
+                <a href="#"><i class="fab fa-google"></i></a>
+                <a href="#"><i class="fab fa-microsoft"></i></a>
+                <a href="#"><i class="fab fa-yahoo"></i></a>
+              </div>
+    </form>
+    </div>
+    <div class="reg-holder" id="reg-holder" style="display: none;">
+          <h2>Register</h2>
+    <form id="registerForm">
+     <input type="text" id="regName" placeholder="Name"></label><br>
+      <input type="text" id="regPhone" placeholder="Phone Number"></label><br>
+      <input type="email" id="regEmail" placeholder="Email ID"></label><br>
+      <input type="password" id="regPassword" placeholder="Password"><br>
+      <button type="submit" id="registerBtn">Register</button>
+
+      <br>
+            <br>
+      <br>
+      <div class="unique">
+            <h4 style="     padding: 5px 20px;
+    background-color: #ffff;
+    display: flex
+;
+    z-index: 100;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-content: center;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 18px;
+    border-radius: 50px;
+    max-width: 150px;
+    border: 1px solid #c4c0c0;
+    position: static;
+    font-size: 10px;">Or if already parts of us</h4>
+      <hr style="max-width: 500px;
+    color: #1d1d1d;
+    margin-top: -31px;
+    margin-bottom: 40px;
+    min-width: 300px;">
+          <a id="action-reg" onclick="action('hide-reg')">Login</a></div>
+
+    </form>
+    </div>
+
+  </div>
+
+</div>
+
+<script src="Scripts/main.js"></script>
+<script>
+function action(x) {
+  if (x === 'show-reg') {
+    document.getElementById('login-holder').style.display = "none";
+    document.getElementById('reg-holder').style.display = "block";
+  } else if (x === 'hide-reg') {
+    document.getElementById('reg-holder').style.display = "none";
+    document.getElementById('login-holder').style.display = "block";
+  }
+}
+
+  
+// Redirect logic + user check
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+}
+
+const rememberedUser = getCookie('remembered_user');
+if (rememberedUser) {
+  fetch('Scripts/user-check.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: rememberedUser })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      window.location.href = 'dashboard.html';
+    }
+  })
+  .catch(err => console.error("User check failed:", err));
+}
+</script>
+
+</body>
+</html>

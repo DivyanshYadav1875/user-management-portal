@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>User Dashboard</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      height: 100vh;
+    }
+
+    .sidebar {
+      width: 260px;
+      background-color: #1e293b;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px;
+    }
+
+    .sidebar .top-logo {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 40px;
+    }
+
+    .sidebar .menu-buttons button {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 16px;
+      padding: 12px 0;
+      text-align: left;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .sidebar .menu-buttons button:hover {
+      background-color: #334155;
+    }
+
+    .sidebar .bottom-info {
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .sidebar .bottom-info .logout {
+      color: #f87171;
+      cursor: pointer;
+      margin-top: 10px;
+      display: inline-block;
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+
+    #status {
+      font-size: 20px;
+      font-weight: bold;
+      color: #222;
+      margin-bottom: 20px;
+    }
+
+    .panel-tabs {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .panel-tabs button {
+      padding: 10px 15px;
+      font-size: 15px;
+      cursor: pointer;
+      border: 1px solid #ccc;
+      background-color: #fff;
+    }
+
+    .panel-tabs button.active {
+      background-color: #1e293b;
+      color: white;
+      border: none;
+    }
+
+    .content-area {
+      flex-grow: 1;
+      background: #fff;
+      padding: 20px;
+      border: 1px solid #ddd;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <div>
+      <div class="top-logo">Marked</div>
+      <div class="menu-buttons">
+        <button onclick="showSubPanel('addUser')">Add Account</button>
+        <button onclick="showSubPanel('viewUsers')">Manage Accounts</button>
+      </div>
+    </div>
+    <div class="bottom-info">
+      <div>Account ID: <span id="accountId">-</span></div>
+      <div>Session: <span id="sessionId">-</span></div>
+      <div class="logout" onclick="logout()">Logout</div>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div id="status">Checking login...</div>
+    <div class="content-area" id="dynamic-panel"></div>
+  </div>
+
+  <script>
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+      return null;
+    }
+
+    const rememberedUser = getCookie('remembered_user');
+
+    if (rememberedUser) {
+      fetch('Scripts/user-check.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: rememberedUser })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          sessionStorage.setItem("user_type", data.user.user_type);
+          sessionStorage.setItem("account_id", data.user.username);
+          document.getElementById("status").innerText = `Welcome ${data.user.username}`;
+          document.getElementById("accountId").innerText = data.user.username;
+        } else {
+          window.location.href = 'index.html';
+        }
+      })
+      .catch(err => {
+        console.error("User-check failed:", err);
+        window.location.href = 'index.html';
+      });
+    } else {
+      window.location.href = 'index.html';
+    }
+
+    function showSubPanel(type) {
+      const panel = document.getElementById('dynamic-panel');
+      const userType = sessionStorage.getItem("user_type") || "basic";
+      panel.innerHTML = '<p>Loading...</p>';
+
+      if (userType !== 'admin') {
+        panel.innerHTML = '<p>You do not have permission to manage accounts.</p>';
+        return;
+      }
+
+      if (type === 'addUser') {
+        panel.innerHTML = `
+          <h3>Add New User</h3>
+          <form id="addUserForm">
+            <input type="text" id="newUsername" placeholder="Username" required><br><br>
+            <input type="email" id="newEmail" placeholder="Email" required><br><br>
+            <input type="password" id="newPassword" placeholder="Password" required><br><br>
+            <select id="newUserType">
+              <option value="basic">Basic</option>
+              <option value="admin">Admin</option>
+            </select><br><br>
+            <button type="submit">Create User</button>
+          </form>
+        `;
+
+        document.getElementById("addUserForm").addEventListener("submit", function (e) {
+          e.preventDefault();
+          const data = {
+            action: "create",
+            username: document.getElementById("newUsername").value,
+            email: document.getElementById("newEmail").value,
+            password: document.getElementById("newPassword").value,
+            user_type: document.getElementById("newUserType").value
+          };
+
+          fetch("Scripts/user-edit.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+          })
+            .then(res => res.json())
+            .then(result => {
+              alert(result.message);
+              if (result.success) showSubPanel("viewUsers");
+            });
+        });
+
+      } else if (type === 'viewUsers') {
+        fetch('Scripts/fetch-users.php')
+          .then(res => {
+            if (!res.ok) throw new Error("Failed to load users");
+            return res.json();
+          })
+          .then(data => {
+            let html = '<h3>All Users</h3><ul>';
+            data.forEach(user => {
+              html += `<li>${user.username} (${user.user_type}) <button onclick="deleteUser(${user.id})">Delete</button></li>`;
+            });
+            html += '</ul>';
+            panel.innerHTML = html;
+          })
+          .catch(error => {
+            console.error("Error fetching users:", error);
+            panel.innerHTML = '<p style="color:red">Failed to fetch users. Please try again later.</p>';
+          });
+      }
+    }
+
+    function deleteUser(id) {
+      if (!confirm("Delete this user?")) return;
+      fetch('Scripts/user-edit.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', id })
+      })
+        .then(res => res.json())
+        .then(resp => {
+          alert(resp.message);
+          if (resp.success) showSubPanel('viewUsers');
+        });
+    }
+
+    function logout() {
+      document.cookie = "remembered_user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      sessionStorage.clear();
+      window.location.href = 'index.html';
+    }
+
+    document.getElementById("sessionId").innerText = new Date().toLocaleDateString();
+  </script>
+</body>
+</html>
